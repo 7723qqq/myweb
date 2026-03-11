@@ -1,0 +1,42 @@
+## Git 仓库管理最佳实践
+
+### ✅ 已配置
+
+**1. pre-commit hook** (自动检测 Java 改动)
+- 检查提交文件列表
+- Java 文件改动时提示编译检查
+
+**2. git 安全设置**
+- core.safecrlf: true - CRLF/LF 换行符安全处理
+
+### 📋 FSR3 Mod 推荐工作流
+
+```bash
+# 创建功能分支
+git checkout -b feature/named-feature
+
+# 开发完成，提交前先用 commit-msg hook 检查信息格式
+git add .
+git commit -m "feat: 添加新功能描述"
+
+# 推送到远程 (如果配置了)
+git push origin feature/named-feature
+```
+
+### 📌 常用命令
+
+| 操作 | 命令 |
+|------|------|
+| 查看状态 | `git status` |
+| 暂存所有改动 | `git add .` |
+| 提交并写信息 | `git commit -m "描述" |
+| 查看历史 | `git log --oneline` |
+| 创建分支 | `git checkout -b feature/name` |
+
+### 💡 下一步建议
+
+1. **配置远程仓库**: `git remote add origin <url>`
+2. **添加 .gitignore**: 排除 build/、.gradle/ 等文件
+3. **设置 GPG 签名**: 提交更安全
+
+想实现哪个？
