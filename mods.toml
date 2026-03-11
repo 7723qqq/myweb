@@ -1,0 +1,30 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="All rights reserved"
+
+[[mods]]
+modId="framegeneration"
+version="${file.jarVersion}"
+displayName="FSR3 Frame Generation"
+description='''
+高性能 FSR3 帧生成模组，为 Minecraft 1.20.1 提供零拷贝的 Vulkan FSR 渲染优化。
+支持 FSR 1.0-4.0，自动硬件检测和版本回退。
+'''
+authors="开发者"
+credits="AMD FidelityFX SDK, Khronos Group"
+logoFile="logo.png"
+updateJSONURL=""
+
+[[dependencies.framegeneration]]
+    modId="forge"
+    mandatory=true
+    versionRange="[47.4.16,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.framegeneration]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.20.1,1.20.1]"
+    ordering="NONE"
+    side="BOTH"

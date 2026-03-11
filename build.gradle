@@ -1,0 +1,174 @@
+buildscript {
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net' }
+        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
+        classpath 'org.spongepowered:mixingradle:0.7.+'
+    }
+}
+
+plugins {
+    id 'eclipse'
+    id 'maven-publish'
+    id 'net.minecraftforge.gradle' version '5.1.+'
+    id 'org.spongepowered.mixin' version '0.7.+'
+}
+
+version = '1.0.0'
+group = 'com.framegeneration'
+archivesBaseName = 'framegeneration'
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
+
+minecraft {
+    mappings channel: 'official', version: '1.20.1'
+    
+    runs {
+        client {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            property 'forge.enabledGameTestNamespaces', 'framegeneration'
+            
+            mods {
+                framegeneration {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        server {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            property 'forge.enabledGameTestNamespaces', 'framegeneration'
+            
+            mods {
+                framegeneration {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        gameTestServer {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            property 'forge.enabledGameTestNamespaces', 'framegeneration'
+            
+            mods {
+                framegeneration {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        data {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            
+            args '--mod', 'framegeneration', '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+            
+            mods {
+                framegeneration {
+                    source sourceSets.main
+                }
+            }
+        }
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+repositories {
+    maven {
+        name = 'SpongePowered'
+        url = 'https://repo.spongepowered.org/repository/maven-public/'
+    }
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.20.1-47.4.16'
+    
+    // Mixin
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+    
+    // LWJGL (OpenGL 绑定)
+    implementation 'org.lwjgl:lwjgl-opengl:3.3.1'
+    implementation 'org.lwjgl:lwjgl-opengl:3.3.1:natives-windows'
+    implementation 'org.lwjgl:lwjgl-opengl:3.3.1:natives-linux'
+    implementation 'org.lwjgl:lwjgl-opengl:3.3.1:natives-macos'
+    
+    // JNA (用于原生库加载)
+    implementation 'net.java.dev.jna:jna:5.13.0'
+    implementation 'net.java.dev.jna:jna-platform:5.13.0'
+}
+
+mixin {
+    add sourceSets.main, 'framegeneration.refmap.json'
+    config 'mixins.framegeneration.json'
+    
+    debug.verbose = true
+    debug.export = true
+}
+
+jar {
+    manifest {
+        attributes([
+            "Specification-Title": "framegeneration",
+            "Specification-Vendor": "framegeneration",
+            "Specification-Version": "1",
+            "Implementation-Title": project.name,
+            "Implementation-Version": project.jar.archiveVersion,
+            "Implementation-Vendor": "framegeneration",
+            "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+            "MixinConfigs": "mixins.framegeneration.json"
+        ])
+    }
+}
+
+jar.finalizedBy('reobfJar')
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact jar
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/mcmodsrepo"
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+// 原生库构建任务
+task buildNativeLib(type: Exec) {
+    workingDir 'src/main/cpp'
+    commandLine 'cmake', '-B', 'build', '-DCMAKE_BUILD_TYPE=Release'
+}
+
+task compileNativeLib(type: Exec, dependsOn: buildNativeLib) {
+    workingDir 'src/main/cpp/build'
+    commandLine 'cmake', '--build', '.', '--config', 'Release'
+}
+
+// 将原生库复制到资源目录
+task copyNativeLibs(type: Copy, dependsOn: compileNativeLib) {
+    from 'src/main/cpp/build/Release'
+    into 'src/main/resources/natives'
+    include '*.dll', '*.so', '*.dylib'
+}
+
+// 确保在构建 JAR 前编译原生库
+jar.dependsOn copyNativeLibs
